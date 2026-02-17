@@ -1,14 +1,14 @@
-# devc — Dev Compiler
+# TokenLn — Dev Compiler
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Status: Experimental](https://img.shields.io/badge/Status-Experimental-orange.svg)]()
 
 **A compiler that transforms runtime behavior into minimal, precise LLM context.**
 
-devc sits between your development environment and your LLM agent. Instead of dumping verbose CLI output into your context window, it compiles runtime behavior into a universal **Deviation IR** — the exact points where reality diverges from expectation. Nothing more.
+TokenLn sits between your development environment and your LLM agent. Instead of dumping verbose CLI output into your context window, it compiles runtime behavior into a universal **Deviation IR** — the exact points where reality diverges from expectation. Nothing more.
 
 ```
-cargo test (200 lines, ~15,000 tokens)         devc cargo test (4 lines, ~50 tokens)
+cargo test (200 lines, ~15,000 tokens)         TokenLn cargo test (4 lines, ~50 tokens)
 ─────────────────────────────────             ─────────────────────────────────────
 running 127 tests                             DEVIATION {
 test_auth_login ... ok                          expected: validate_token() → 401
@@ -48,13 +48,13 @@ When your test fails, the LLM doesn't need:
 
 It needs exactly one thing: **where does reality diverge from expectation?**
 
-That's what devc produces.
+That's what TokenLn produces.
 
 ---
 
 ## How It Works
 
-devc is a **compiler pipeline**, not a text compressor:
+TokenLn is a **compiler pipeline**, not a text compressor:
 
 ```
 Raw CLI Output
@@ -94,19 +94,19 @@ Raw CLI Output
 The magic is the **Intermediate Representation**. Like LLVM IR works for any source language and any target platform, the Deviation IR works for any language, tool, or LLM agent:
 
 ```
-Python/pytest    → devc → Deviation IR → Claude Code
-Rust/cargo test  → devc → Deviation IR → Copilot
-TypeScript/jest  → devc → Deviation IR → Codex
-Go/go test       → devc → Deviation IR → Cursor
+Python/pytest    → TokenLn → Deviation IR → Claude Code
+Rust/cargo test  → TokenLn → Deviation IR → Copilot
+TypeScript/jest  → TokenLn → Deviation IR → Codex
+Go/go test       → TokenLn → Deviation IR → Cursor
 ```
 
 ---
 
 ## Token Savings (Real, Not Aspirational)
 
-> **Honest disclaimer**: devc eliminates *diagnostic* tokens (what's wrong). The LLM still needs some *repair* tokens (the relevant source lines to fix it). Real-world savings: **80-90%**, not 99%.
+> **Honest disclaimer**: TokenLn eliminates *diagnostic* tokens (what's wrong). The LLM still needs some *repair* tokens (the relevant source lines to fix it). Real-world savings: **80-90%**, not 99%.
 
-| Operation | Standard | devc | Savings |
+| Operation | Standard | TokenLn | Savings |
 |-----------|----------|------|---------|
 | `cargo test` (1 failure / 127 tests) | ~15,000 | ~500 | -97% |
 | `pytest` (3 failures / 200 tests) | ~20,000 | ~800 | -96% |
@@ -122,17 +122,17 @@ Go/go test       → devc → Deviation IR → Cursor
 
 ```bash
 # Quick install (Linux/macOS)
-curl -fsSL https://raw.githubusercontent.com/your-org/devc/master/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/your-org/TokenLn/master/install.sh | sh
 
 # Verify
-devc --version
-devc status
+TokenLn --version
+TokenLn status
 ```
 
 ### From source
 
 ```bash
-cargo install --git https://github.com/your-org/devc
+cargo install --git https://github.com/your-org/TokenLn
 ```
 
 ---
@@ -141,21 +141,21 @@ cargo install --git https://github.com/your-org/devc
 
 ```bash
 # Initialize for your LLM agent
-devc init --claude    # Claude Code
-devc init --copilot   # GitHub Copilot
-devc init --generic   # Any agent via stdout
+TokenLn init --claude    # Claude Code
+TokenLn init --copilot   # GitHub Copilot
+TokenLn init --generic   # Any agent via stdout
 
 # Run commands through the compiler
-devc cargo test
-devc pytest
-devc jest
-devc go test ./...
+TokenLn cargo test
+TokenLn pytest
+TokenLn jest
+TokenLn go test ./...
 
 # See what the IR looks like
-devc cargo test --emit-ir
+TokenLn cargo test --emit-ir
 
 # Check token savings
-devc stats
+TokenLn stats
 ```
 
 ---
@@ -165,40 +165,40 @@ devc stats
 ### Test Runners
 
 ```bash
-devc cargo test              # Rust — failures only with deviation IR
-devc cargo test --emit-ir    # Show raw IR before LLM emission
-devc pytest                  # Python — assertion deviations
-devc jest                    # JavaScript/TypeScript
-devc go test ./...           # Go
-devc vitest run              # Vite/TypeScript
-devc rspec                   # Ruby
+TokenLn cargo test              # Rust — failures only with deviation IR
+TokenLn cargo test --emit-ir    # Show raw IR before LLM emission
+TokenLn pytest                  # Python — assertion deviations
+TokenLn jest                    # JavaScript/TypeScript
+TokenLn go test ./...           # Go
+TokenLn vitest run              # Vite/TypeScript
+TokenLn rspec                   # Ruby
 ```
 
 ### Build Tools
 
 ```bash
-devc cargo build             # Rust build errors as deviations
-devc npm run build           # JS/TS build failures
-devc tsc                     # TypeScript type errors
-devc next build              # Next.js
+TokenLn cargo build             # Rust build errors as deviations
+TokenLn npm run build           # JS/TS build failures
+TokenLn tsc                     # TypeScript type errors
+TokenLn next build              # Next.js
 ```
 
 ### Git
 
 ```bash
-devc git diff                # Semantic diff (what changed, not how)
-devc git status              # Compact, structured status
-devc git log -n 10           # One-line semantic commits
+TokenLn git diff                # Semantic diff (what changed, not how)
+TokenLn git status              # Compact, structured status
+TokenLn git log -n 10           # One-line semantic commits
 ```
 
 ### Analysis
 
 ```bash
-devc stats                   # Token savings summary
-devc stats --graph           # ASCII graph of last 30 days
-devc stats --history         # Recent command history
-devc ir show <command>       # Show IR for last command
-devc ir diff                 # Deviation diff between two runs
+TokenLn stats                   # Token savings summary
+TokenLn stats --graph           # ASCII graph of last 30 days
+TokenLn stats --history         # Recent command history
+TokenLn ir show <command>       # Show IR for last command
+TokenLn ir diff                 # Deviation diff between two runs
 ```
 
 ---
@@ -262,7 +262,7 @@ DEVIATION [build]
 ### Claude Code
 
 ```bash
-devc init --claude
+TokenLn init --claude
 # Installs hook to ~/.claude/settings.json
 # All Bash commands automatically compiled before reaching Claude
 ```
@@ -271,14 +271,14 @@ devc init --claude
 
 ```bash
 # Pipe devc output to any LLM agent
-devc cargo test | your-llm-agent
+TokenLn cargo test | your-llm-agent
 ```
 
 ### MCP Server
 
 ```bash
 # Run as MCP server for direct LLM integration
-devc serve --mcp
+TokenLn serve --mcp
 ```
 
 ---
@@ -337,7 +337,7 @@ The one question that matters:
 We're testing this with 50 real Rust bugs, comparing:
 - Raw `cargo test` output
 - `rtk` compressed output  
-- `devc` deviation IR
+- `TokenLn` deviation IR
 
 **If equal accuracy at 80%+ fewer tokens → we build the rest.**
 
@@ -383,7 +383,7 @@ These aren't footnotes. They're the actual hard problems. We're working on them.
 
 ## Comparison
 
-| | rtk | devc |
+| | rtk | TokenLn |
 |---|---|---|
 | **Approach** | Text compression | Semantic compilation |
 | **Information loss** | Yes (heuristic) | No (deviation-only) |
@@ -393,7 +393,7 @@ These aren't footnotes. They're the actual hard problems. We're working on them.
 | **Latency** | None (inline) | ~10ms (local server) |
 | **Granularity** | Lossy | Lossless on deviations |
 
-devc is **rtk's successor**, not its replacement. rtk compresses the haystack. devc shows you the needle.
+TokenLn is **rtk's successor**, not its replacement. rtk compresses the haystack. TokenLn shows you the needle.
 
 ---
 
@@ -420,12 +420,12 @@ MIT — see [LICENSE](LICENSE).
 
 ## About
 
-devc is built on one insight:
+TokenLn is built on one insight:
 
 **Developers don't debug by reading code. They trace execution and find where actual behavior diverges from expected behavior.**
 
-Current LLM tools ignore this. They dump everything and hope. devc compiles the signal from the noise.
+Current LLM tools ignore this. They dump everything and hope. TokenLn compiles the signal from the noise.
 
-The compiler analogy is precise. A compiler transforms what humans write (verbose, redundant) into what machines execute (precise, minimal). devc transforms what machines produce (verbose, noisy) into what LLMs reason about (precise, minimal).
+The compiler analogy is precise. A compiler transforms what humans write (verbose, redundant) into what machines execute (precise, minimal). TokenLn transforms what machines produce (verbose, noisy) into what LLMs reason about (precise, minimal).
 
 Same problem. Inverted.
