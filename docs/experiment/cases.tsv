@@ -1,0 +1,8 @@
+case_id	command_path	fixture_path	objective
+cargo_test_assertion	cargo:test	tests/fixtures/cargo_test/assertion_failure.txt	fix failing cargo test assertion
+cargo_test_panic_low_conf	cargo:test	tests/fixtures/cargo_test/panic_quoted_format.txt	diagnose panic in cargo tests
+cargo_build_missing_symbol	cargo:build	tests/fixtures/cargo_build/missing_symbol.txt	fix unresolved symbol in build
+cargo_build_conflicting_evidence	cargo:build	tests/fixtures/cargo_build/conflicting_evidence.txt	resolve conflicting build diagnostics
+go_test_assertion	go:test	tests/fixtures/go_test/assertion_failure.txt	fix failing go test assertion
+pytest_assertion	pytest	tests/fixtures/pytest/assertion_failure.txt	fix failing pytest assertion
+jest_assertion	jest	tests/fixtures/jest/assertion_failure.txt	fix failing jest assertion

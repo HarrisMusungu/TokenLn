@@ -1,0 +1,38 @@
+{
+  "schema_version": "0.1",
+  "source": "jest",
+  "deviations": [
+    {
+      "kind": "test",
+      "expected": {
+        "description": "assertion right side should be 401"
+      },
+      "actual": {
+        "description": "assertion produced 403"
+      },
+      "location": {
+        "file": "src/auth.test.ts",
+        "line": 14,
+        "column": 23,
+        "symbol": "auth > rejects expired token"
+      },
+      "trace": {
+        "frames": [
+          "jest",
+          "auth > rejects expired token"
+        ]
+      },
+      "confidence": 0.99,
+      "confidence_reasons": [
+        "base:+0.20",
+        "test_identity:+0.15",
+        "precise_location:+0.25",
+        "assertion_pair:+0.30",
+        "trace_depth:+0.05",
+        "expect_marker:+0.05",
+        "clamped:0.99"
+      ],
+      "summary": "auth > rejects expired token failed at src/auth.test.ts:14"
+    }
+  ]
+}

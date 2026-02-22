@@ -1,0 +1,43 @@
+{
+  "schema_version": "0.1",
+  "source": "cargo build",
+  "deviations": [
+    {
+      "kind": "build",
+      "expected": {
+        "description": "compilation should satisfy rustc E0308"
+      },
+      "actual": {
+        "description": "mismatched types; help: try parsing the string into a number; snippet: let count: u32 = \"seven\";; marker: ^^^^^^^ expected `u32`, found `&str`"
+      },
+      "location": {
+        "file": "src/main.rs",
+        "line": 4,
+        "column": 20,
+        "symbol": "E0308"
+      },
+      "trace": {
+        "frames": [
+          "cargo build",
+          "rustc E0308"
+        ]
+      },
+      "confidence": 0.8,
+      "confidence_reasons": [
+        "base:+0.25",
+        "error_code:+0.25",
+        "precise_location:+0.25",
+        "primary_message:+0.10",
+        "help_text:+0.05",
+        "explain_code:+0.05",
+        "code_span_pair:+0.10",
+        "line_mismatch:-0.10",
+        "code_mismatch:-0.20",
+        "trace_depth:+0.05",
+        "low_confidence_fallback:<0.85"
+      ],
+      "raw_excerpt": "Compiling demo v0.1.0 (/tmp/demo)\nerror[E0308]: mismatched types\n --> src/main.rs:4:20\n  |\n5 |     let count: u32 = \"seven\";\n  |                      ^^^^^^^ expected `u32`, found `&str`",
+      "summary": "build error E0308 at src/main.rs:4"
+    }
+  ]
+}

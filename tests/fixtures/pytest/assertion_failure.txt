@@ -1,0 +1,18 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.11.8, pytest-8.3.4
+collected 1 item
+
+tests/test_auth.py F                                                      [100%]
+
+=================================== FAILURES ===================================
+________________________ test_auth_invalid_token ________________________
+
+    def test_auth_invalid_token():
+        status_code = validate_token("expired")
+>       assert status_code == 401
+E       assert 403 == 401
+
+tests/test_auth.py:27: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_auth.py::test_auth_invalid_token - assert 403 == 401
+============================== 1 failed in 0.03s ===============================

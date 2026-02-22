@@ -1,0 +1,15 @@
+pub mod analysis;
+pub mod context;
+pub mod emitters;
+pub mod fixlog;
+pub mod ir;
+pub mod lexers;
+pub mod mcp;
+pub mod optimizer;
+pub mod parsers;
+pub mod pipeline;
+pub mod policy;
+pub mod postprocess;
+pub mod query_intent;
+pub mod repo;
+pub mod symbol_index;

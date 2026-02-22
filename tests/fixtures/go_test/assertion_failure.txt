@@ -1,0 +1,4 @@
+--- FAIL: TestValidateToken (0.00s)
+    auth_test.go:42: expected 401, got 403
+FAIL
+FAIL    github.com/acme/auth  0.123s

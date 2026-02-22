@@ -1,0 +1,16 @@
+running 1 test
+test tests::vérifié_tëst ... FAILED
+
+failures:
+
+---- tests::vérifié_tëst stdout ----
+thread 'tests::vérifié_tëst' panicked at src/unicode.rs:7:5:
+assertion `left == right` failed
+  left: 42
+ right: 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+failures:
+    tests::vérifié_tëst
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s

@@ -1,0 +1,27 @@
+running 4 tests
+test tests::alpha ... ok
+test tests::beta_fail ... FAILED
+test tests::gamma ... ok
+test tests::delta_fail ... FAILED
+
+failures:
+
+---- tests::beta_fail stdout ----
+thread 'tests::beta_fail' panicked at src/beta.rs:15:9:
+assertion `left == right` failed
+  left: "hello"
+ right: "world"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- tests::delta_fail stdout ----
+thread 'tests::delta_fail' panicked at src/delta.rs:30:13:
+assertion `left == right` failed
+  left: 0
+ right: 1
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+failures:
+    tests::beta_fail
+    tests::delta_fail
+
+test result: FAILED. 2 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s

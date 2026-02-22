@@ -1,0 +1,37 @@
+{
+  "schema_version": "0.1",
+  "source": "go test",
+  "deviations": [
+    {
+      "kind": "test",
+      "expected": {
+        "description": "assertion right side should be 401"
+      },
+      "actual": {
+        "description": "assertion produced 403"
+      },
+      "location": {
+        "file": "auth_test.go",
+        "line": 42,
+        "column": 1,
+        "symbol": "TestValidateToken"
+      },
+      "trace": {
+        "frames": [
+          "go test",
+          "TestValidateToken"
+        ]
+      },
+      "confidence": 0.95,
+      "confidence_reasons": [
+        "base:+0.20",
+        "test_identity:+0.15",
+        "coarse_location:+0.20",
+        "assertion_pair:+0.30",
+        "trace_depth:+0.05",
+        "expected_actual_marker:+0.05"
+      ],
+      "summary": "TestValidateToken failed at auth_test.go:42"
+    }
+  ]
+}

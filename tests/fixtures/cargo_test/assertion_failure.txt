@@ -1,0 +1,17 @@
+running 3 tests
+test tests::auth_login ... ok
+test tests::auth_invalid_token ... FAILED
+
+failures:
+
+---- tests::auth_invalid_token stdout ----
+thread 'tests::auth_invalid_token' panicked at src/auth.rs:89:9:
+assertion `left == right` failed
+  left: 403
+ right: 401
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+failures:
+    tests::auth_invalid_token
+
+test result: FAILED. 2 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s

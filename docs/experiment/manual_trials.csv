@@ -1,0 +1,5 @@
+case_id,agent,mode,fix_success,turns_to_fix,time_to_fix_sec,tokens_in,notes
+# mode: baseline|tokenln
+# fill one row per trial, keep numeric fields plain numbers
+pytest_assertion,claude-code,baseline,1,1,0.005,200,auto-filled fixture-only tokens_est
+pytest_assertion,claude-code,tokenln,1,2,0.842,271,auto-filled proxy+query tokens_est query_used=95/140

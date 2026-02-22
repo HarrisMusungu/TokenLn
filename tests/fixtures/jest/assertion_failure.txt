@@ -1,0 +1,21 @@
+FAIL src/auth.test.ts
+  auth
+    x rejects expired token (5 ms)
+
+  ● auth > rejects expired token
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 401
+    Received: 403
+
+      12 |   const status_code = validate_token("expired");
+      13 |
+    > 14 |   expect(status_code).toBe(401);
+         |                       ^
+      15 | });
+
+      at Object.<anonymous> (src/auth.test.ts:14:23)
+
+Test Suites: 1 failed, 1 total
+Tests:       1 failed, 1 total

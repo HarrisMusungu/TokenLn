@@ -1,0 +1,42 @@
+{
+  "schema_version": "0.1",
+  "source": "cargo build",
+  "deviations": [
+    {
+      "kind": "build",
+      "expected": {
+        "description": "compilation should satisfy rustc E0425"
+      },
+      "actual": {
+        "description": "cannot find value `x` in this scope; help: a local variable with a similar name exists: `y`; snippet: println!(\"{}\", x);; marker: ^ not found in this scope"
+      },
+      "location": {
+        "file": "src/main.rs",
+        "line": 4,
+        "column": 20,
+        "symbol": "E0425"
+      },
+      "trace": {
+        "frames": [
+          "cargo build",
+          "rustc E0425"
+        ]
+      },
+      "confidence": 0.99,
+      "confidence_reasons": [
+        "base:+0.25",
+        "error_code:+0.25",
+        "precise_location:+0.25",
+        "primary_message:+0.10",
+        "help_text:+0.05",
+        "explain_code:+0.05",
+        "code_span_pair:+0.10",
+        "line_alignment:+0.05",
+        "code_alignment:+0.05",
+        "trace_depth:+0.05",
+        "clamped:0.99"
+      ],
+      "summary": "build error E0425 at src/main.rs:4"
+    }
+  ]
+}

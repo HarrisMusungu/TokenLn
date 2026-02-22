@@ -1,0 +1,37 @@
+{
+  "schema_version": "0.1",
+  "source": "pytest",
+  "deviations": [
+    {
+      "kind": "test",
+      "expected": {
+        "description": "assertion right side should be 401"
+      },
+      "actual": {
+        "description": "assertion produced 403"
+      },
+      "location": {
+        "file": "tests/test_auth.py",
+        "line": 27,
+        "column": null,
+        "symbol": "tests/test_auth.py::test_auth_invalid_token"
+      },
+      "trace": {
+        "frames": [
+          "pytest",
+          "tests/test_auth.py::test_auth_invalid_token"
+        ]
+      },
+      "confidence": 0.95,
+      "confidence_reasons": [
+        "base:+0.20",
+        "test_identity:+0.15",
+        "coarse_location:+0.20",
+        "assertion_pair:+0.30",
+        "trace_depth:+0.05",
+        "assertion_error_marker:+0.05"
+      ],
+      "summary": "tests/test_auth.py::test_auth_invalid_token failed at tests/test_auth.py:27"
+    }
+  ]
+}

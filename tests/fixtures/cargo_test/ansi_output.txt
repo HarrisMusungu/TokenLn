@@ -1,0 +1,17 @@
+running 2 tests
+test tests::passes ... [32mok[0m
+test tests::color_test ... [31mFAILED[0m
+
+failures:
+
+---- tests::color_test stdout ----
+thread 'tests::color_test' panicked at src/lib.rs:42:5:
+assertion `left == right` failed
+  left: 1
+ right: 2
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+failures:
+    tests::color_test
+
+[31mtest result: FAILED.[0m 1 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s

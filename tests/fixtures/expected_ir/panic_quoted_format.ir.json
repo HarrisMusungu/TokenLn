@@ -1,0 +1,38 @@
+{
+  "schema_version": "0.1",
+  "source": "cargo test",
+  "deviations": [
+    {
+      "kind": "test",
+      "expected": {
+        "description": "test should complete without panic"
+      },
+      "actual": {
+        "description": "panic occurred during test execution: called `Option::unwrap()` on a `None` value"
+      },
+      "location": {
+        "file": "src/main.rs",
+        "line": 12,
+        "column": 5,
+        "symbol": "tests::panic_case"
+      },
+      "trace": {
+        "frames": [
+          "cargo test",
+          "tests::panic_case"
+        ]
+      },
+      "confidence": 0.8,
+      "confidence_reasons": [
+        "base:+0.25",
+        "test_identity:+0.15",
+        "precise_location:+0.20",
+        "panic_message:+0.15",
+        "trace_depth:+0.05",
+        "low_confidence_fallback:<0.85"
+      ],
+      "raw_excerpt": "\n---- tests::panic_case stdout ----\nthread 'tests::panic_case' panicked at 'called `Option::unwrap()` on a `None` value', src/main.rs:12:5\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\nfailures:",
+      "summary": "tests::panic_case failed at src/main.rs:12"
+    }
+  ]
+}

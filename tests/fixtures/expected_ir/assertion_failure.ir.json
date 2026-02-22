@@ -1,0 +1,38 @@
+{
+  "schema_version": "0.1",
+  "source": "cargo test",
+  "deviations": [
+    {
+      "kind": "test",
+      "expected": {
+        "description": "assertion right side should be 401"
+      },
+      "actual": {
+        "description": "assertion produced 403"
+      },
+      "location": {
+        "file": "src/auth.rs",
+        "line": 89,
+        "column": 9,
+        "symbol": "tests::auth_invalid_token"
+      },
+      "trace": {
+        "frames": [
+          "cargo test",
+          "tests::auth_invalid_token"
+        ]
+      },
+      "confidence": 0.99,
+      "confidence_reasons": [
+        "base:+0.25",
+        "test_identity:+0.15",
+        "precise_location:+0.20",
+        "assertion_pair:+0.30",
+        "trace_depth:+0.05",
+        "assertion_text:+0.05",
+        "clamped:0.99"
+      ],
+      "summary": "tests::auth_invalid_token failed at src/auth.rs:89"
+    }
+  ]
+}
