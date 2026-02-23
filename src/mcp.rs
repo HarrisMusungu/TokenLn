@@ -25,7 +25,8 @@
 /// | repo_search | Search repository code (`rg` with fallback) |
 /// | repo_read | Read file slices with line bounds |
 /// | repo_tree | Compact repository tree summary |
-use std::collections::{HashMap, HashSet};
+/// | repo_log | Per-file git commit history (`git log --follow`) |
+use std::collections::HashMap;
 use std::fs;
 use std::io::{self, BufRead, Read, Write};
 use std::path::{Path, PathBuf};
@@ -64,6 +65,7 @@ use crate::policy::{
     validate_repo_tree_request_with_policy,
 };
 use crate::postprocess::apply_low_confidence_fallback;
+use crate::root_cause::RootCauseStore;
 use crate::repo::{
     log_repo_file, query_repo_context, read_repo_file, search_repo, tree_repo, RepoLogOptions,
     RepoQueryOptions, RepoReadOptions, RepoSearchOptions, RepoTreeOptions,
@@ -94,7 +96,6 @@ enum Frontend {
 }
 
 struct RunArtifacts {
-    run_dir: PathBuf,
     run_id: String,
     report: DeviationReport,
     report_artifact: String,
@@ -391,8 +392,8 @@ fn tool_analyze(args: &Value) -> Result<String, String> {
 fn tool_query(args: &Value, artifacts_dir: &Path, fix_log_path: &Path) -> Result<String, String> {
     let dir = resolve_dir(args, artifacts_dir);
     let loaded = load_latest_run(&dir)?;
-    let previous_signatures = previous_run_signatures(&loaded.run_dir, &dir, &loaded.report.source);
     let fixed_signatures = load_fix_signatures(fix_log_path);
+    let rc_store = RootCauseStore::load(&rc_graph_path(artifacts_dir));
 
     let budget = args.get("budget").and_then(|v| v.as_u64()).unwrap_or(400) as u32;
     let objective = args
@@ -413,7 +414,8 @@ fn tool_query(args: &Value, artifacts_dir: &Path, fix_log_path: &Path) -> Result
         report: &loaded.report,
         raw_output: &loaded.raw_output,
         report_artifact: &loaded.report_artifact,
-        previous_signatures: &previous_signatures,
+        occurrence_counts: &rc_store.occurrence_counts(),
+        regression_signatures: &rc_store.regression_signatures(),
         fixed_signatures: &fixed_signatures,
     });
 
@@ -439,8 +441,8 @@ fn tool_expand(args: &Value, artifacts_dir: &Path, fix_log_path: &Path) -> Resul
     let dir = resolve_dir(args, artifacts_dir);
 
     let loaded = load_latest_run(&dir)?;
-    let previous_signatures = previous_run_signatures(&loaded.run_dir, &dir, &loaded.report.source);
     let fixed_signatures = load_fix_signatures(fix_log_path);
+    let rc_store = RootCauseStore::load(&rc_graph_path(artifacts_dir));
 
     let packet = build_context_packet(BuildPacketOptions {
         run_id: &loaded.run_id,
@@ -450,7 +452,8 @@ fn tool_expand(args: &Value, artifacts_dir: &Path, fix_log_path: &Path) -> Resul
         report: &loaded.report,
         raw_output: &loaded.raw_output,
         report_artifact: &loaded.report_artifact,
-        previous_signatures: &previous_signatures,
+        occurrence_counts: &rc_store.occurrence_counts(),
+        regression_signatures: &rc_store.regression_signatures(),
         fixed_signatures: &fixed_signatures,
     });
 
@@ -846,6 +849,15 @@ fn emit_report(report: &DeviationReport, target: Target) -> String {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
+// ── Root-cause graph helpers ───────────────────────────────────────────────────
+
+fn rc_graph_path(artifacts_dir: &Path) -> PathBuf {
+    artifacts_dir
+        .parent()
+        .unwrap_or(artifacts_dir)
+        .join("root_cause_graph.jsonl")
+}
+
 // Artifact I/O helpers
 // ──────────────────────────────────────────────────────────────────────────────
 
@@ -893,28 +905,11 @@ fn load_run_artifacts(run_dir: &Path) -> Result<RunArtifacts, String> {
         .to_string();
 
     Ok(RunArtifacts {
-        run_dir: run_dir.to_path_buf(),
         run_id,
         report,
         report_artifact,
         raw_output,
     })
-}
-
-fn previous_run_signatures(run_dir: &Path, artifacts_dir: &Path, source: &str) -> HashSet<String> {
-    let prev_dir = match previous_run_dir_for_source(run_dir, artifacts_dir, source) {
-        Ok(d) => d,
-        Err(_) => return HashSet::new(),
-    };
-    let text = match fs::read_to_string(prev_dir.join("report.ir.json")) {
-        Ok(t) => t,
-        Err(_) => return HashSet::new(),
-    };
-    let report: DeviationReport = match serde_json::from_str(&text) {
-        Ok(r) => r,
-        Err(_) => return HashSet::new(),
-    };
-    report.deviations.iter().map(deviation_signature).collect()
 }
 
 fn previous_run_dir_for_source(

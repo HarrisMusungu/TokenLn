@@ -11,6 +11,7 @@ use clap::{Args, Parser, Subcommand, ValueEnum};
 use serde::Serialize;
 
 use tokenln::fixlog::load_fix_signatures;
+use tokenln::root_cause::RootCauseStore;
 
 use tokenln::analysis::cargo_build::CargoBuildAnalyzer;
 use tokenln::analysis::cargo_test::CargoTestAnalyzer;
@@ -578,6 +579,7 @@ struct ProxyArtifacts {
 
 #[derive(Debug)]
 struct LoadedRunArtifacts {
+    #[allow(dead_code)]
     run_dir: PathBuf,
     run_id: String,
     report: tokenln::ir::DeviationReport,
@@ -861,6 +863,29 @@ fn run_repo_log(args: RepoLogArgs) -> Result<i32, String> {
     Ok(0)
 }
 
+/// Returns the path to the root-cause graph JSONL file.
+/// Canonical location: `<tokenln-dir>/root_cause_graph.jsonl`
+/// where `<tokenln-dir>` is the parent of `artifacts_dir` (`.tokenln/runs` → `.tokenln`).
+fn rc_graph_path(artifacts_dir: &Path) -> PathBuf {
+    artifacts_dir
+        .parent()
+        .unwrap_or(artifacts_dir)
+        .join("root_cause_graph.jsonl")
+}
+
+/// Record all deviation signatures from `report` into the persistent root-cause graph.
+/// Best-effort: failures are silently ignored so they never block the main command.
+fn record_run_to_store(artifacts_dir: &Path, run_id: &str, report: &tokenln::ir::DeviationReport) {
+    let mut store = RootCauseStore::load(&rc_graph_path(artifacts_dir));
+    let sigs = report
+        .deviations
+        .iter()
+        .map(deviation_signature)
+        .collect::<Vec<_>>();
+    store.record_run(run_id, &sigs);
+    let _ = store.save();
+}
+
 fn render_repo_search_plain(result: &tokenln::repo::RepoSearchResult) -> String {
     let mut lines = Vec::new();
     lines.push(format!(
@@ -1094,6 +1119,16 @@ fn run_proxy_run(args: ProxyRunArgs) -> Result<i32, String> {
                 )?)
             };
 
+            // Update the root-cause graph so novelty scores decay across runs.
+            if let Some(ref artifacts) = artifacts {
+                let run_id = artifacts
+                    .run_dir
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("run");
+                record_run_to_store(&args.artifacts_dir, run_id, &report);
+            }
+
             if args.emit_ir {
                 let output = serde_json::to_string_pretty(&report)
                     .map_err(|err| format!("failed to render IR: {err}"))?;
@@ -1272,10 +1307,9 @@ fn run_proxy_last(args: ProxyLastArgs) -> Result<i32, String> {
 fn run_query(args: QueryArgs) -> Result<i32, String> {
     let run_dir = resolve_query_run_dir(args.run.as_ref(), &args.dir)?;
     let loaded = load_run_artifacts(&run_dir)?;
-    let previous_signatures =
-        previous_run_signatures(&loaded.run_dir, &args.dir, &loaded.report.source)?;
     let fix_log_path = args.dir.parent().unwrap_or(&args.dir).join("fix_log.jsonl");
     let fixed_signatures = load_fix_signatures(&fix_log_path);
+    let rc_store = RootCauseStore::load(&rc_graph_path(&args.dir));
 
     let packet = build_context_packet(BuildPacketOptions {
         run_id: &loaded.run_id,
@@ -1285,7 +1319,8 @@ fn run_query(args: QueryArgs) -> Result<i32, String> {
         report: &loaded.report,
         raw_output: &loaded.raw_output,
         report_artifact: &loaded.report_artifact,
-        previous_signatures: &previous_signatures,
+        occurrence_counts: &rc_store.occurrence_counts(),
+        regression_signatures: &rc_store.regression_signatures(),
         fixed_signatures: &fixed_signatures,
     });
 
@@ -1303,10 +1338,9 @@ fn run_query(args: QueryArgs) -> Result<i32, String> {
 fn run_expand(args: ExpandArgs) -> Result<i32, String> {
     let run_dir = resolve_query_run_dir(args.run.as_ref(), &args.dir)?;
     let loaded = load_run_artifacts(&run_dir)?;
-    let previous_signatures =
-        previous_run_signatures(&loaded.run_dir, &args.dir, &loaded.report.source)?;
     let fix_log_path = args.dir.parent().unwrap_or(&args.dir).join("fix_log.jsonl");
     let fixed_signatures = load_fix_signatures(&fix_log_path);
+    let rc_store = RootCauseStore::load(&rc_graph_path(&args.dir));
 
     let packet = build_context_packet(BuildPacketOptions {
         run_id: &loaded.run_id,
@@ -1316,7 +1350,8 @@ fn run_expand(args: ExpandArgs) -> Result<i32, String> {
         report: &loaded.report,
         raw_output: &loaded.raw_output,
         report_artifact: &loaded.report_artifact,
-        previous_signatures: &previous_signatures,
+        occurrence_counts: &rc_store.occurrence_counts(),
+        regression_signatures: &rc_store.regression_signatures(),
         fixed_signatures: &fixed_signatures,
     });
 
@@ -1463,6 +1498,13 @@ fn run_fixed(args: FixedArgs) -> Result<i32, String> {
     let signature = deviation_signature(deviation);
     let entry = FixLogEntry::new(&signature, &loaded.report.source, &loaded.run_id, args.note);
     record_fix(&args.fix_log, &entry)?;
+
+    // Update the root-cause graph so future runs detect regressions if this
+    // signature reappears after being resolved.
+    let mut rc_store = RootCauseStore::load(&rc_graph_path(&args.dir));
+    rc_store.mark_resolved(&signature);
+    // Best-effort: don't fail the command if the store can't be written.
+    let _ = rc_store.save();
 
     println!(
         "Recorded fix: deviation '{}' from run '{}'",
@@ -2295,6 +2337,7 @@ fn list_run_dirs(artifacts_dir: &Path) -> Result<Vec<PathBuf>, String> {
     Ok(run_dirs)
 }
 
+#[cfg_attr(not(test), allow(dead_code))]
 fn previous_run_signatures(
     run_dir: &Path,
     artifacts_dir: &Path,
@@ -3037,6 +3080,16 @@ fn run_direct_command(
         &report,
         artifacts_dir,
     )?;
+
+    // Update the root-cause graph for novelty decay.
+    {
+        let run_id = artifacts
+            .run_dir
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("run");
+        record_run_to_store(artifacts_dir, run_id, &report);
+    }
 
     if emit_ir {
         let output = serde_json::to_string_pretty(&report)

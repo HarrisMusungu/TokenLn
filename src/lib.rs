@@ -12,4 +12,5 @@ pub mod policy;
 pub mod postprocess;
 pub mod query_intent;
 pub mod repo;
+pub mod root_cause;
 pub mod symbol_index;

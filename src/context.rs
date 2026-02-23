@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use serde::{Deserialize, Serialize};
 
@@ -58,7 +58,13 @@ pub struct BuildPacketOptions<'a> {
     pub report: &'a DeviationReport,
     pub raw_output: &'a str,
     pub report_artifact: &'a str,
-    pub previous_signatures: &'a HashSet<String>,
+    /// Occurrence counts per deviation signature from the persistent root-cause graph.
+    /// A signature seen N times receives novelty `1 / (1 + ln(N))`.
+    /// Unknown signatures (not in map) default to count=1 (full novelty).
+    pub occurrence_counts: &'a HashMap<String, u32>,
+    /// Signatures that were marked resolved but have since reappeared (regressions).
+    /// Regressions receive novelty_score = 0.90 — intentionally high to surface them.
+    pub regression_signatures: &'a HashSet<String>,
     /// Signatures of deviations previously recorded as fixed via `tokenln fixed`.
     /// Deviations matching these signatures are strongly deprioritized (novelty_score = 0.10).
     pub fixed_signatures: &'a HashSet<String>,
@@ -76,15 +82,23 @@ pub fn build_context_packet(options: BuildPacketOptions<'_>) -> ContextPacket {
             let id = format!("d{}", idx + 1);
             let signature = deviation_signature(deviation);
 
-            // Previously fixed deviations get a very low novelty score (0.10) so they
-            // sink to the bottom of budget allocation. Seen-before (not fixed) deviations
-            // get 0.55. Brand-new deviations get 1.0.
+            // Novelty scoring (highest priority first):
+            //   fixed (explicit user feedback) → 0.10  (sink to bottom)
+            //   regression (was fixed, reappeared) → 0.90  (surface prominently)
+            //   count > 1 → logarithmic decay: 1 / (1 + ln(count))
+            //   count = 1 / unknown → 1.0  (brand new)
             let (novelty_score, fix_hint) = if options.fixed_signatures.contains(&signature) {
                 (0.10_f32, Some("previously recorded as fixed".to_string()))
-            } else if options.previous_signatures.contains(&signature) {
-                (0.55_f32, None)
+            } else if options.regression_signatures.contains(&signature) {
+                (0.90_f32, None)
             } else {
-                (1.0_f32, None)
+                let count = options.occurrence_counts.get(&signature).copied().unwrap_or(1);
+                let score = if count <= 1 {
+                    1.0_f32
+                } else {
+                    1.0_f32 / (1.0_f32 + (count as f32).ln())
+                };
+                (score, None)
             };
 
             let utility_score = score_utility(deviation, novelty_score);
@@ -139,10 +153,16 @@ pub fn build_context_packet(options: BuildPacketOptions<'_>) -> ContextPacket {
         let sig = deviation_signature(deviation);
         let (novelty_score, fix_hint) = if options.fixed_signatures.contains(&sig) {
             (0.10_f32, Some("previously recorded as fixed".to_string()))
-        } else if options.previous_signatures.contains(&sig) {
-            (0.55_f32, None)
+        } else if options.regression_signatures.contains(&sig) {
+            (0.90_f32, None)
         } else {
-            (1.0_f32, None)
+            let count = options.occurrence_counts.get(&sig).copied().unwrap_or(1);
+            let score = if count <= 1 {
+                1.0_f32
+            } else {
+                1.0_f32 / (1.0_f32 + (count as f32).ln())
+            };
+            (score, None)
         };
         let minimal = DeviationSlice {
             id: "d1".to_string(),
@@ -379,6 +399,8 @@ mod tests {
         Behavior, Deviation, DeviationKind, DeviationReport, ExecutionTrace, Expectation, Location,
     };
 
+    use std::collections::HashMap;
+
     use super::{build_context_packet, deviation_signature, BuildPacketOptions};
 
     fn sample_report() -> DeviationReport {
@@ -448,7 +470,8 @@ mod tests {
             report: &report,
             raw_output: "tests/test_auth.py::test_auth_invalid_token\nsrc/main.rs:10:5",
             report_artifact: "{}\n",
-            previous_signatures: &HashSet::new(),
+            occurrence_counts: &HashMap::new(),
+            regression_signatures: &HashSet::new(),
             fixed_signatures: &HashSet::new(),
         });
 
@@ -460,8 +483,9 @@ mod tests {
     #[test]
     fn novelty_score_drops_for_repeated_deviation() {
         let report = sample_report();
-        let mut prev = HashSet::new();
-        prev.insert(deviation_signature(&report.deviations[0]));
+        // Simulate this deviation having been seen 3 times before.
+        let mut counts = HashMap::new();
+        counts.insert(deviation_signature(&report.deviations[0]), 3u32);
 
         let packet = build_context_packet(BuildPacketOptions {
             run_id: "run-2",
@@ -471,7 +495,8 @@ mod tests {
             report: &report,
             raw_output: "tests/test_auth.py::test_auth_invalid_token",
             report_artifact: "{}\n",
-            previous_signatures: &prev,
+            occurrence_counts: &counts,
+            regression_signatures: &HashSet::new(),
             fixed_signatures: &HashSet::new(),
         });
 
@@ -480,7 +505,9 @@ mod tests {
             .iter()
             .find(|slice| slice.summary.contains("invalid_token"))
             .expect("expected repeated deviation to be present");
+        // count=3 → novelty = 1/(1+ln(3)) ≈ 0.48
         assert!(repeated.novelty_score < 1.0);
+        assert!(repeated.novelty_score > 0.10, "decay should not bottom out for count=3");
     }
 
     #[test]
@@ -497,7 +524,8 @@ mod tests {
             report: &report,
             raw_output: "",
             report_artifact: "{}",
-            previous_signatures: &HashSet::new(),
+            occurrence_counts: &HashMap::new(),
+            regression_signatures: &HashSet::new(),
             fixed_signatures: &fixed,
         });
 
@@ -515,6 +543,38 @@ mod tests {
         assert!(
             fixed_slice.fix_hint.is_some(),
             "fix_hint should be set for fixed deviations"
+        );
+    }
+
+    #[test]
+    fn regression_gets_high_novelty_score() {
+        let report = sample_report();
+        let mut regressions = HashSet::new();
+        regressions.insert(deviation_signature(&report.deviations[0]));
+
+        let packet = build_context_packet(BuildPacketOptions {
+            run_id: "run-4",
+            source: "pytest",
+            objective: "fix failures",
+            budget_tokens: 500,
+            report: &report,
+            raw_output: "",
+            report_artifact: "{}",
+            occurrence_counts: &HashMap::new(),
+            regression_signatures: &regressions,
+            fixed_signatures: &HashSet::new(),
+        });
+
+        let regressed = packet
+            .deviations
+            .iter()
+            .find(|slice| slice.summary.contains("invalid_token"))
+            .expect("regression should be present");
+        // Regression signals a previously-fixed bug reappearing — surfaces at 0.90.
+        assert!(
+            (regressed.novelty_score - 0.90).abs() < 0.01,
+            "regression novelty should be ~0.90, got {}",
+            regressed.novelty_score
         );
     }
 }
